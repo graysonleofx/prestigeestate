@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Property, useCreateProperty, useUpdateProperty } from "@/hooks/useProperties";
+import ImageUpload from "./ImageUpload";
 
 const propertySchema = z.object({
   title: z.string().min(1, "Title is required").max(200),
@@ -39,7 +40,7 @@ const propertySchema = z.object({
   type: z.string().min(1, "Type is required"),
   featured: z.boolean(),
   description: z.string().max(5000).nullable(),
-  image_url: z.string().url("Must be a valid URL").or(z.literal("")).nullable(),
+  image_url: z.string().nullable(),
   year_built: z.coerce.number().min(1800).max(2100).nullable().optional(),
   lot_size: z.string().max(50).nullable().optional(),
   parking: z.string().max(100).nullable().optional(),
@@ -53,7 +54,7 @@ interface PropertyFormDialogProps {
   property?: Property | null;
 }
 
-const propertyTypes = ["House", "Villa", "Penthouse", "Loft", "Estate", "Condo", "Townhouse"];
+const propertyTypes = ["House", "Villa", "Penthouse", "Loft", "Estate", "Condo", "Townhouse", "Apartment"];
 
 const PropertyFormDialog = ({
   open,
@@ -76,7 +77,7 @@ const PropertyFormDialog = ({
       type: "House",
       featured: false,
       description: "",
-      image_url: "",
+      image_url: null,
       year_built: null,
       lot_size: "",
       parking: "",
@@ -95,7 +96,7 @@ const PropertyFormDialog = ({
         type: property.type,
         featured: property.featured,
         description: property.description || "",
-        image_url: property.image_url || "",
+        image_url: property.image_url || null,
         year_built: property.year_built,
         lot_size: property.lot_size || "",
         parking: property.parking || "",
@@ -111,7 +112,7 @@ const PropertyFormDialog = ({
         type: "House",
         featured: false,
         description: "",
-        image_url: "",
+        image_url: null,
         year_built: null,
         lot_size: "",
         parking: "",
@@ -157,6 +158,24 @@ const PropertyFormDialog = ({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Image Upload */}
+            <FormField
+              control={form.control}
+              name="image_url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Property Image</FormLabel>
+                  <FormControl>
+                    <ImageUpload
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -277,24 +296,6 @@ const PropertyFormDialog = ({
                       <Input
                         type="number"
                         placeholder="2020"
-                        {...field}
-                        value={field.value ?? ""}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="image_url"
-                render={({ field }) => (
-                  <FormItem className="md:col-span-2">
-                    <FormLabel>Image URL</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="https://example.com/image.jpg"
                         {...field}
                         value={field.value ?? ""}
                       />
