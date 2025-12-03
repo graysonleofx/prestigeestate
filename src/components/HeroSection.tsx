@@ -1,10 +1,24 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Search, MapPin, Home, DollarSign } from "lucide-react";
 import heroImage from "@/assets/hero-mansion.jpg";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
   const [searchType, setSearchType] = useState<"buy" | "rent">("buy");
+  const [location, setLocation] = useState("");
+  const [propertyType, setPropertyType] = useState("");
+  const [priceRange, setPriceRange] = useState("");
+
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (location && location !== "all") params.set("location", location);
+    if (propertyType && propertyType !== "all") params.set("type", propertyType);
+    if (priceRange && priceRange !== "any") params.set("price", priceRange);
+    
+    navigate(`/properties${params.toString() ? `?${params.toString()}` : ""}`);
+  };
 
   return (
     <section className="relative min-h-screen flex items-center">
@@ -68,12 +82,19 @@ const HeroSection = () => {
                   <MapPin className="h-4 w-4" />
                   Location
                 </label>
-                <select className="w-full h-12 px-4 rounded-lg border border-input bg-background text-foreground focus:ring-2 focus:ring-ring transition-smooth">
-                  <option>All Locations</option>
-                  <option>Beverly Hills</option>
-                  <option>Malibu</option>
-                  <option>Bel Air</option>
-                  <option>Hollywood Hills</option>
+                <select 
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="w-full h-12 px-4 rounded-lg border border-input bg-background text-foreground focus:ring-2 focus:ring-ring transition-smooth"
+                >
+                  <option value="">All Locations</option>
+                  <option value="Beverly Hills">Beverly Hills</option>
+                  <option value="Malibu">Malibu</option>
+                  <option value="Bel Air">Bel Air</option>
+                  <option value="Hollywood Hills">Hollywood Hills</option>
+                  <option value="Los Angeles">Los Angeles</option>
+                  <option value="Miami">Miami</option>
+                  <option value="New York">New York</option>
                 </select>
               </div>
 
@@ -82,12 +103,18 @@ const HeroSection = () => {
                   <Home className="h-4 w-4" />
                   Property Type
                 </label>
-                <select className="w-full h-12 px-4 rounded-lg border border-input bg-background text-foreground focus:ring-2 focus:ring-ring transition-smooth">
-                  <option>All Types</option>
-                  <option>House</option>
-                  <option>Apartment</option>
-                  <option>Villa</option>
-                  <option>Penthouse</option>
+                <select 
+                  value={propertyType}
+                  onChange={(e) => setPropertyType(e.target.value)}
+                  className="w-full h-12 px-4 rounded-lg border border-input bg-background text-foreground focus:ring-2 focus:ring-ring transition-smooth"
+                >
+                  <option value="">All Types</option>
+                  <option value="house">House</option>
+                  <option value="apartment">Apartment</option>
+                  <option value="villa">Villa</option>
+                  <option value="penthouse">Penthouse</option>
+                  <option value="condo">Condo</option>
+                  <option value="estate">Estate</option>
                 </select>
               </div>
 
@@ -96,17 +123,27 @@ const HeroSection = () => {
                   <DollarSign className="h-4 w-4" />
                   Price Range
                 </label>
-                <select className="w-full h-12 px-4 rounded-lg border border-input bg-background text-foreground focus:ring-2 focus:ring-ring transition-smooth">
-                  <option>Any Price</option>
-                  <option>$500K - $1M</option>
-                  <option>$1M - $2M</option>
-                  <option>$2M - $5M</option>
-                  <option>$5M+</option>
+                <select 
+                  value={priceRange}
+                  onChange={(e) => setPriceRange(e.target.value)}
+                  className="w-full h-12 px-4 rounded-lg border border-input bg-background text-foreground focus:ring-2 focus:ring-ring transition-smooth"
+                >
+                  <option value="">Any Price</option>
+                  <option value="0-1000000">$0 - $1M</option>
+                  <option value="1000000-2000000">$1M - $2M</option>
+                  <option value="2000000-5000000">$2M - $5M</option>
+                  <option value="5000000-10000000">$5M - $10M</option>
+                  <option value="10000000+">$10M+</option>
                 </select>
               </div>
 
               <div className="flex items-end">
-                <Button variant="gold" size="lg" className="w-full h-12">
+                <Button 
+                  variant="gold" 
+                  size="lg" 
+                  className="w-full h-12"
+                  onClick={handleSearch}
+                >
                   <Search className="h-5 w-5 mr-2" />
                   Search
                 </Button>

@@ -17,6 +17,7 @@ import {
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useProperty } from "@/hooks/useProperties";
+import ScheduleTourDialog from "@/components/ScheduleTourDialog";
 
 import property1 from "@/assets/property-1.jpg";
 import property2 from "@/assets/property-2.jpg";
@@ -44,6 +45,7 @@ const PropertyDetail = () => {
   const { id } = useParams();
   const [activeImage, setActiveImage] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [showTourDialog, setShowTourDialog] = useState(false);
   const { data: property, isLoading } = useProperty(id || "");
 
   if (isLoading) {
@@ -270,7 +272,12 @@ const PropertyDetail = () => {
                   </div>
 
                   <div className="space-y-4">
-                    <Button variant="gold" size="lg" className="w-full">
+                    <Button 
+                      variant="gold" 
+                      size="lg" 
+                      className="w-full"
+                      onClick={() => setShowTourDialog(true)}
+                    >
                       <Calendar className="mr-2 h-5 w-5" />
                       Schedule Tour
                     </Button>
@@ -291,6 +298,12 @@ const PropertyDetail = () => {
           </div>
         </section>
       </div>
+
+      <ScheduleTourDialog
+        open={showTourDialog}
+        onOpenChange={setShowTourDialog}
+        propertyTitle={property.title}
+      />
 
       <Footer />
     </main>

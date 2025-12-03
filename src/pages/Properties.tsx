@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PropertyCard from "@/components/PropertyCard";
@@ -22,15 +23,36 @@ import { useProperties } from "@/hooks/useProperties";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const Properties = () => {
+  const [searchParams] = useSearchParams();
   const { data: properties = [], isLoading } = useProperties();
+  
+  // Initialize filters from URL params
+  const initialLocation = searchParams.get("location") || "";
+  const initialType = searchParams.get("type") || "all";
+  const initialPrice = searchParams.get("price") || "";
   
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedType, setSelectedType] = useState("all");
+  const [selectedType, setSelectedType] = useState(initialType);
   const [selectedBeds, setSelectedBeds] = useState("any");
-  const [locationFilter, setLocationFilter] = useState("");
+  const [locationFilter, setLocationFilter] = useState(initialLocation);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000000]);
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Parse initial price range from URL
+  useEffect(() => {
+    if (initialPrice) {
+      const [min, max] = initialPrice.split("-").map((v) => {
+        const num = parseInt(v.replace(/\D/g, ""));
+        return isNaN(num) ? 0 : num;
+      });
+      if (max) {
+        setPriceRange([min, max]);
+      } else if (initialPrice.includes("+")) {
+        setPriceRange([min, 100000000]);
+      }
+    }
+  }, [initialPrice]);
 
   // Get unique locations for suggestions
   const uniqueLocations = useMemo(() => {
