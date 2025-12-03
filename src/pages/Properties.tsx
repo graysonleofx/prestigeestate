@@ -1,106 +1,98 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PropertyCard from "@/components/PropertyCard";
 import { Button } from "@/components/ui/button";
-import { Search, SlidersHorizontal, Grid, List } from "lucide-react";
-
-import property1 from "@/assets/property-1.jpg";
-import property2 from "@/assets/property-2.jpg";
-import property3 from "@/assets/property-3.jpg";
-import property4 from "@/assets/property-4.jpg";
-import property5 from "@/assets/property-5.jpg";
-import property6 from "@/assets/property-6.jpg";
-
-const allProperties = [
-  {
-    id: "1",
-    image: property1,
-    title: "Modern Skyline Penthouse",
-    location: "Downtown, Los Angeles",
-    price: "$4,250,000",
-    beds: 4,
-    baths: 3,
-    sqft: "4,500 sqft",
-    type: "Penthouse",
-    featured: true,
-  },
-  {
-    id: "2",
-    image: property2,
-    title: "Oceanfront Paradise Villa",
-    location: "Malibu, California",
-    price: "$8,900,000",
-    beds: 6,
-    baths: 5,
-    sqft: "7,200 sqft",
-    type: "Villa",
-    featured: true,
-  },
-  {
-    id: "3",
-    image: property3,
-    title: "Mountain View Retreat",
-    location: "Aspen, Colorado",
-    price: "$5,750,000",
-    beds: 5,
-    baths: 4,
-    sqft: "5,800 sqft",
-    type: "House",
-    featured: false,
-  },
-  {
-    id: "4",
-    image: property4,
-    title: "Classic European Estate",
-    location: "Beverly Hills, CA",
-    price: "$12,500,000",
-    beds: 8,
-    baths: 10,
-    sqft: "15,000 sqft",
-    type: "Estate",
-    featured: true,
-  },
-  {
-    id: "5",
-    image: property5,
-    title: "Industrial Chic Loft",
-    location: "Brooklyn, New York",
-    price: "$2,800,000",
-    beds: 3,
-    baths: 2,
-    sqft: "3,200 sqft",
-    type: "Loft",
-    featured: false,
-  },
-  {
-    id: "6",
-    image: property6,
-    title: "Tuscan Vineyard Villa",
-    location: "Napa Valley, California",
-    price: "$6,950,000",
-    beds: 5,
-    baths: 4,
-    sqft: "6,500 sqft",
-    type: "Villa",
-    featured: false,
-  },
-];
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Search, SlidersHorizontal, Grid, List, X } from "lucide-react";
+import { useProperties } from "@/hooks/useProperties";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Properties = () => {
+  const { data: properties = [], isLoading } = useProperties();
+  
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("all");
+  const [selectedBeds, setSelectedBeds] = useState("any");
+  const [locationFilter, setLocationFilter] = useState("");
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000000]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const filteredProperties = allProperties.filter((property) => {
-    const matchesSearch =
-      property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      property.location.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType =
-      selectedType === "all" ||
-      property.type.toLowerCase() === selectedType.toLowerCase();
-    return matchesSearch && matchesType;
-  });
+  // Get unique locations for suggestions
+  const uniqueLocations = useMemo(() => {
+    const locations = properties.map((p) => p.location);
+    return [...new Set(locations)];
+  }, [properties]);
+
+  // Get min/max prices from properties
+  const { minPrice, maxPrice } = useMemo(() => {
+    if (properties.length === 0) return { minPrice: 0, maxPrice: 50000000 };
+    const prices = properties.map((p) => p.price);
+    return {
+      minPrice: Math.min(...prices),
+      maxPrice: Math.max(...prices),
+    };
+  }, [properties]);
+
+  const filteredProperties = useMemo(() => {
+    return properties.filter((property) => {
+      const matchesSearch =
+        property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        property.location.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesType =
+        selectedType === "all" ||
+        property.type.toLowerCase() === selectedType.toLowerCase();
+      
+      const matchesBeds =
+        selectedBeds === "any" ||
+        (selectedBeds === "5+" ? property.beds >= 5 : property.beds === parseInt(selectedBeds));
+      
+      const matchesLocation =
+        !locationFilter ||
+        property.location.toLowerCase().includes(locationFilter.toLowerCase());
+      
+      const matchesPrice =
+        property.price >= priceRange[0] && property.price <= priceRange[1];
+
+      return matchesSearch && matchesType && matchesBeds && matchesLocation && matchesPrice;
+    });
+  }, [properties, searchQuery, selectedType, selectedBeds, locationFilter, priceRange]);
+
+  const hasActiveFilters = 
+    selectedType !== "all" || 
+    selectedBeds !== "any" || 
+    locationFilter !== "" || 
+    priceRange[0] > 0 || 
+    priceRange[1] < maxPrice;
+
+  const clearFilters = () => {
+    setSelectedType("all");
+    setSelectedBeds("any");
+    setLocationFilter("");
+    setPriceRange([0, maxPrice]);
+  };
+
+  const formatPrice = (value: number) => {
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`;
+    }
+    return `$${(value / 1000).toFixed(0)}K`;
+  };
 
   return (
     <main className="min-h-screen bg-background">
@@ -131,34 +123,121 @@ const Properties = () => {
             {/* Search */}
             <div className="relative w-full md:w-96">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <input
+              <Input
                 type="text"
                 placeholder="Search properties..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-12 pl-12 pr-4 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring transition-smooth"
+                className="w-full h-12 pl-12 pr-4"
               />
             </div>
 
             {/* Filters */}
-            <div className="flex items-center gap-4">
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                className="h-12 px-4 rounded-lg border border-input bg-background text-foreground focus:ring-2 focus:ring-ring transition-smooth"
-              >
-                <option value="all">All Types</option>
-                <option value="house">House</option>
-                <option value="villa">Villa</option>
-                <option value="penthouse">Penthouse</option>
-                <option value="loft">Loft</option>
-                <option value="estate">Estate</option>
-              </select>
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Type Filter */}
+              <Select value={selectedType} onValueChange={setSelectedType}>
+                <SelectTrigger className="w-[140px] h-12">
+                  <SelectValue placeholder="Property Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="house">House</SelectItem>
+                  <SelectItem value="villa">Villa</SelectItem>
+                  <SelectItem value="penthouse">Penthouse</SelectItem>
+                  <SelectItem value="loft">Loft</SelectItem>
+                  <SelectItem value="estate">Estate</SelectItem>
+                  <SelectItem value="condo">Condo</SelectItem>
+                  <SelectItem value="apartment">Apartment</SelectItem>
+                </SelectContent>
+              </Select>
 
-              <Button variant="outline" size="default">
-                <SlidersHorizontal className="h-5 w-5 mr-2" />
-                Filters
-              </Button>
+              {/* Beds Filter */}
+              <Select value={selectedBeds} onValueChange={setSelectedBeds}>
+                <SelectTrigger className="w-[120px] h-12">
+                  <SelectValue placeholder="Beds" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any Beds</SelectItem>
+                  <SelectItem value="1">1 Bed</SelectItem>
+                  <SelectItem value="2">2 Beds</SelectItem>
+                  <SelectItem value="3">3 Beds</SelectItem>
+                  <SelectItem value="4">4 Beds</SelectItem>
+                  <SelectItem value="5+">5+ Beds</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* More Filters Popover */}
+              <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="default" className="h-12">
+                    <SlidersHorizontal className="h-5 w-5 mr-2" />
+                    More Filters
+                    {hasActiveFilters && (
+                      <span className="ml-2 h-2 w-2 rounded-full bg-gold" />
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="end">
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="font-medium mb-3">Location</h4>
+                      <Input
+                        placeholder="Filter by location..."
+                        value={locationFilter}
+                        onChange={(e) => setLocationFilter(e.target.value)}
+                      />
+                      {locationFilter && uniqueLocations.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {uniqueLocations
+                            .filter((loc) =>
+                              loc.toLowerCase().includes(locationFilter.toLowerCase())
+                            )
+                            .slice(0, 3)
+                            .map((loc) => (
+                              <button
+                                key={loc}
+                                onClick={() => setLocationFilter(loc)}
+                                className="text-xs px-2 py-1 bg-secondary rounded-md hover:bg-secondary/80 transition-colors"
+                              >
+                                {loc}
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <h4 className="font-medium mb-3">Price Range</h4>
+                      <div className="px-2">
+                        <Slider
+                          value={priceRange}
+                          onValueChange={(value) => setPriceRange(value as [number, number])}
+                          min={0}
+                          max={maxPrice || 50000000}
+                          step={100000}
+                          className="mb-3"
+                        />
+                        <div className="flex justify-between text-sm text-muted-foreground">
+                          <span>{formatPrice(priceRange[0])}</span>
+                          <span>{formatPrice(priceRange[1])}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {hasActiveFilters && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearFilters}
+                        className="w-full"
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Clear All Filters
+                      </Button>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
 
               {/* View Toggle */}
               <div className="hidden md:flex items-center gap-1 p-1 bg-secondary rounded-lg">
@@ -195,29 +274,61 @@ const Properties = () => {
             Showing {filteredProperties.length} properties
           </p>
 
-          <div
-            className={`grid gap-8 ${
-              viewMode === "grid"
-                ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-                : "grid-cols-1"
-            }`}
-          >
-            {filteredProperties.map((property, index) => (
-              <div
-                key={property.id}
-                className="animate-fade-up"
-                style={{ animationDelay: `${index * 0.05}s` }}
-              >
-                <PropertyCard {...property} />
-              </div>
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="space-y-4">
+                  <Skeleton className="h-64 w-full rounded-xl" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div
+              className={`grid gap-8 ${
+                viewMode === "grid"
+                  ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                  : "grid-cols-1"
+              }`}
+            >
+              {filteredProperties.map((property, index) => (
+                <div
+                  key={property.id}
+                  className="animate-fade-up"
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
+                  <PropertyCard
+                    id={property.id}
+                    image={property.image_url || "/placeholder.svg"}
+                    title={property.title}
+                    location={property.location}
+                    price={`$${property.price.toLocaleString()}`}
+                    beds={property.beds}
+                    baths={property.baths}
+                    sqft={`${property.sqft.toLocaleString()} sqft`}
+                    type={property.type}
+                    featured={property.featured}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
 
-          {filteredProperties.length === 0 && (
+          {!isLoading && filteredProperties.length === 0 && (
             <div className="text-center py-20">
               <p className="text-muted-foreground text-lg">
                 No properties found matching your criteria.
               </p>
+              {hasActiveFilters && (
+                <Button
+                  variant="outline"
+                  onClick={clearFilters}
+                  className="mt-4"
+                >
+                  Clear Filters
+                </Button>
+              )}
             </div>
           )}
         </div>
