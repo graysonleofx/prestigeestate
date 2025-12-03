@@ -2,7 +2,9 @@ import { Button } from "@/components/ui/button";
 import PropertyCard from "./PropertyCard";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useFeaturedProperties } from "@/hooks/useProperties";
 
+// Fallback images for properties without images
 import property1 from "@/assets/property-1.jpg";
 import property2 from "@/assets/property-2.jpg";
 import property3 from "@/assets/property-3.jpg";
@@ -10,82 +12,19 @@ import property4 from "@/assets/property-4.jpg";
 import property5 from "@/assets/property-5.jpg";
 import property6 from "@/assets/property-6.jpg";
 
-const properties = [
-  {
-    id: "1",
-    image: property1,
-    title: "Modern Skyline Penthouse",
-    location: "Downtown, Los Angeles",
-    price: "$4,250,000",
-    beds: 4,
-    baths: 3,
-    sqft: "4,500 sqft",
-    type: "Penthouse",
-    featured: true,
-  },
-  {
-    id: "2",
-    image: property2,
-    title: "Oceanfront Paradise Villa",
-    location: "Malibu, California",
-    price: "$8,900,000",
-    beds: 6,
-    baths: 5,
-    sqft: "7,200 sqft",
-    type: "Villa",
-    featured: true,
-  },
-  {
-    id: "3",
-    image: property3,
-    title: "Mountain View Retreat",
-    location: "Aspen, Colorado",
-    price: "$5,750,000",
-    beds: 5,
-    baths: 4,
-    sqft: "5,800 sqft",
-    type: "House",
-    featured: false,
-  },
-  {
-    id: "4",
-    image: property4,
-    title: "Classic European Estate",
-    location: "Beverly Hills, CA",
-    price: "$12,500,000",
-    beds: 8,
-    baths: 10,
-    sqft: "15,000 sqft",
-    type: "Estate",
-    featured: true,
-  },
-  {
-    id: "5",
-    image: property5,
-    title: "Industrial Chic Loft",
-    location: "Brooklyn, New York",
-    price: "$2,800,000",
-    beds: 3,
-    baths: 2,
-    sqft: "3,200 sqft",
-    type: "Loft",
-    featured: false,
-  },
-  {
-    id: "6",
-    image: property6,
-    title: "Tuscan Vineyard Villa",
-    location: "Napa Valley, California",
-    price: "$6,950,000",
-    beds: 5,
-    baths: 4,
-    sqft: "6,500 sqft",
-    type: "Villa",
-    featured: false,
-  },
-];
+const fallbackImages = [property1, property2, property3, property4, property5, property6];
 
 const FeaturedProperties = () => {
+  const { data: properties, isLoading } = useFeaturedProperties();
+
+  const formatPrice = (price: number) => {
+    return `$${price.toLocaleString()}`;
+  };
+
+  const getImage = (imageUrl: string | null, index: number) => {
+    return imageUrl || fallbackImages[index % fallbackImages.length];
+  };
+
   return (
     <section className="py-20 bg-background">
       <div className="container mx-auto px-4">
@@ -112,17 +51,47 @@ const FeaturedProperties = () => {
         </div>
 
         {/* Properties Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {properties.map((property, index) => (
-            <div
-              key={property.id}
-              className="animate-fade-up"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <PropertyCard {...property} />
-            </div>
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-card rounded-2xl overflow-hidden animate-pulse">
+                <div className="aspect-[4/3] bg-secondary" />
+                <div className="p-5 space-y-3">
+                  <div className="h-5 bg-secondary rounded w-3/4" />
+                  <div className="h-4 bg-secondary rounded w-1/2" />
+                  <div className="h-4 bg-secondary rounded w-full mt-4" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : properties && properties.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {properties.map((property, index) => (
+              <div
+                key={property.id}
+                className="animate-fade-up"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <PropertyCard
+                  id={property.id}
+                  image={getImage(property.image_url, index)}
+                  title={property.title}
+                  location={property.location}
+                  price={formatPrice(property.price)}
+                  beds={property.beds}
+                  baths={property.baths}
+                  sqft={`${property.sqft.toLocaleString()} sqft`}
+                  type={property.type}
+                  featured={property.featured}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No featured properties available yet.</p>
+          </div>
+        )}
       </div>
     </section>
   );
