@@ -3,38 +3,29 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Search, MapPin, Home, DollarSign } from "lucide-react";
 import heroImage from "@/assets/hero-mansion.jpg";
-
 const HeroSection = () => {
   const navigate = useNavigate();
   const [searchType, setSearchType] = useState<"buy" | "rent">("buy");
   const [location, setLocation] = useState("");
   const [propertyType, setPropertyType] = useState("");
   const [priceRange, setPriceRange] = useState("");
-
   const handleSearch = () => {
     const params = new URLSearchParams();
     if (location && location !== "all") params.set("location", location);
     if (propertyType && propertyType !== "all") params.set("type", propertyType);
     if (priceRange && priceRange !== "any") params.set("price", priceRange);
-    
     navigate(`/properties${params.toString() ? `?${params.toString()}` : ""}`);
   };
-
-  return (
-    <section className="relative min-h-screen flex items-center">
+  return <section className="relative min-h-screen flex items-center">
       {/* Background Image */}
       <div className="absolute inset-0">
-        <img
-          src={heroImage}
-          alt="Luxury modern mansion"
-          className="w-full h-full object-cover"
-        />
+        <img src={heroImage} alt="Luxury modern mansion" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-dark/90 via-slate-dark/70 to-transparent" />
       </div>
 
       {/* Content */}
       <div className="relative container mx-auto px-4 pt-20">
-        <div className="max-w-3xl">
+        <div className="max-w-3xl my-[20px]">
           <span className="inline-block px-4 py-2 bg-gold/20 text-gold rounded-full text-sm font-medium mb-6 animate-fade-up">
             #1 Luxury Real Estate Agency
           </span>
@@ -53,24 +44,10 @@ const HeroSection = () => {
           <div className="bg-card rounded-2xl p-6 shadow-card-hover animate-fade-up stagger-3">
             {/* Toggle */}
             <div className="flex gap-2 mb-6">
-              <button
-                onClick={() => setSearchType("buy")}
-                className={`px-6 py-2 rounded-lg font-medium transition-smooth ${
-                  searchType === "buy"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                }`}
-              >
+              <button onClick={() => setSearchType("buy")} className={`px-6 py-2 rounded-lg font-medium transition-smooth ${searchType === "buy" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}>
                 Buy
               </button>
-              <button
-                onClick={() => setSearchType("rent")}
-                className={`px-6 py-2 rounded-lg font-medium transition-smooth ${
-                  searchType === "rent"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                }`}
-              >
+              <button onClick={() => setSearchType("rent")} className={`px-6 py-2 rounded-lg font-medium transition-smooth ${searchType === "rent" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}>
                 Rent
               </button>
             </div>
@@ -82,11 +59,7 @@ const HeroSection = () => {
                   <MapPin className="h-4 w-4" />
                   Location
                 </label>
-                <select 
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="w-full h-12 px-4 rounded-lg border border-input bg-background text-foreground focus:ring-2 focus:ring-ring transition-smooth"
-                >
+                <select value={location} onChange={e => setLocation(e.target.value)} className="w-full h-12 px-4 rounded-lg border border-input bg-background text-foreground focus:ring-2 focus:ring-ring transition-smooth">
                   <option value="">All Locations</option>
                   <option value="Beverly Hills">Beverly Hills</option>
                   <option value="Malibu">Malibu</option>
@@ -103,11 +76,7 @@ const HeroSection = () => {
                   <Home className="h-4 w-4" />
                   Property Type
                 </label>
-                <select 
-                  value={propertyType}
-                  onChange={(e) => setPropertyType(e.target.value)}
-                  className="w-full h-12 px-4 rounded-lg border border-input bg-background text-foreground focus:ring-2 focus:ring-ring transition-smooth"
-                >
+                <select value={propertyType} onChange={e => setPropertyType(e.target.value)} className="w-full h-12 px-4 rounded-lg border border-input bg-background text-foreground focus:ring-2 focus:ring-ring transition-smooth">
                   <option value="">All Types</option>
                   <option value="house">House</option>
                   <option value="apartment">Apartment</option>
@@ -123,11 +92,7 @@ const HeroSection = () => {
                   <DollarSign className="h-4 w-4" />
                   Price Range
                 </label>
-                <select 
-                  value={priceRange}
-                  onChange={(e) => setPriceRange(e.target.value)}
-                  className="w-full h-12 px-4 rounded-lg border border-input bg-background text-foreground focus:ring-2 focus:ring-ring transition-smooth"
-                >
+                <select value={priceRange} onChange={e => setPriceRange(e.target.value)} className="w-full h-12 px-4 rounded-lg border border-input bg-background text-foreground focus:ring-2 focus:ring-ring transition-smooth">
                   <option value="">Any Price</option>
                   <option value="0-1000000">$0 - $1M</option>
                   <option value="1000000-2000000">$1M - $2M</option>
@@ -138,12 +103,7 @@ const HeroSection = () => {
               </div>
 
               <div className="flex items-end">
-                <Button 
-                  variant="gold" 
-                  size="lg" 
-                  className="w-full h-12"
-                  onClick={handleSearch}
-                >
+                <Button variant="gold" size="lg" className="w-full h-12" onClick={handleSearch}>
                   <Search className="h-5 w-5 mr-2" />
                   Search
                 </Button>
@@ -180,8 +140,6 @@ const HeroSection = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default HeroSection;
