@@ -2,8 +2,17 @@ import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { MapPin, Phone, Mail, Clock, Send, CheckCircle } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+
+const contactSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(100, "Name must be less than 100 characters"),
+  email: z.string().trim().email("Invalid email address").max(255, "Email must be less than 255 characters"),
+  phone: z.string().regex(/^[\d\s\-\(\)\+]*$/, "Invalid phone number format").max(20, "Phone number too long").optional().or(z.literal("")),
+  subject: z.string().min(1, "Please select a subject"),
+  message: z.string().trim().min(1, "Message is required").max(2000, "Message must be less than 2000 characters"),
+});
 
 const contactInfo = [
   {
@@ -31,6 +40,7 @@ const contactInfo = [
 const Contact = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -41,6 +51,25 @@ const Contact = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+
+    const result = contactSchema.safeParse(formData);
+    
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as string] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      toast({
+        title: "Please fix the form errors",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     // Simulate form submission
@@ -52,6 +81,7 @@ const Contact = () => {
     });
 
     setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
+    setErrors({});
     setIsSubmitting(false);
   };
 
@@ -120,14 +150,15 @@ const Contact = () => {
                       </label>
                       <input
                         type="text"
-                        required
                         value={formData.name}
                         onChange={(e) =>
                           setFormData({ ...formData, name: e.target.value })
                         }
                         placeholder="John Doe"
-                        className="w-full h-12 px-4 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring transition-smooth"
+                        maxLength={100}
+                        className={`w-full h-12 px-4 rounded-lg border bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring transition-smooth ${errors.name ? "border-destructive" : "border-input"}`}
                       />
+                      {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-foreground">
@@ -135,14 +166,15 @@ const Contact = () => {
                       </label>
                       <input
                         type="email"
-                        required
                         value={formData.email}
                         onChange={(e) =>
                           setFormData({ ...formData, email: e.target.value })
                         }
                         placeholder="john@example.com"
-                        className="w-full h-12 px-4 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring transition-smooth"
+                        maxLength={255}
+                        className={`w-full h-12 px-4 rounded-lg border bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring transition-smooth ${errors.email ? "border-destructive" : "border-input"}`}
                       />
+                      {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
                     </div>
                   </div>
 
@@ -158,20 +190,21 @@ const Contact = () => {
                           setFormData({ ...formData, phone: e.target.value })
                         }
                         placeholder="(123) 456-7890"
-                        className="w-full h-12 px-4 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring transition-smooth"
+                        maxLength={20}
+                        className={`w-full h-12 px-4 rounded-lg border bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring transition-smooth ${errors.phone ? "border-destructive" : "border-input"}`}
                       />
+                      {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-foreground">
                         Subject *
                       </label>
                       <select
-                        required
                         value={formData.subject}
                         onChange={(e) =>
                           setFormData({ ...formData, subject: e.target.value })
                         }
-                        className="w-full h-12 px-4 rounded-lg border border-input bg-background text-foreground focus:ring-2 focus:ring-ring transition-smooth"
+                        className={`w-full h-12 px-4 rounded-lg border bg-background text-foreground focus:ring-2 focus:ring-ring transition-smooth ${errors.subject ? "border-destructive" : "border-input"}`}
                       >
                         <option value="">Select a subject</option>
                         <option value="buying">Buying a Property</option>
@@ -180,6 +213,7 @@ const Contact = () => {
                         <option value="consultation">Free Consultation</option>
                         <option value="other">Other Inquiry</option>
                       </select>
+                      {errors.subject && <p className="text-sm text-destructive">{errors.subject}</p>}
                     </div>
                   </div>
 
@@ -188,15 +222,16 @@ const Contact = () => {
                       Message *
                     </label>
                     <textarea
-                      required
                       rows={5}
                       value={formData.message}
                       onChange={(e) =>
                         setFormData({ ...formData, message: e.target.value })
                       }
                       placeholder="Tell us how we can help you..."
-                      className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring transition-smooth resize-none"
+                      maxLength={2000}
+                      className={`w-full px-4 py-3 rounded-lg border bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring transition-smooth resize-none ${errors.message ? "border-destructive" : "border-input"}`}
                     />
+                    {errors.message && <p className="text-sm text-destructive">{errors.message}</p>}
                   </div>
 
                   <Button
