@@ -19,6 +19,14 @@ import { CalendarIcon, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { z } from "zod";
+
+const tourSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(100, "Name must be less than 100 characters"),
+  email: z.string().trim().email("Invalid email address").max(255, "Email must be less than 255 characters"),
+  phone: z.string().regex(/^[\d\s\-\(\)\+]+$/, "Invalid phone number format").min(7, "Phone number is too short").max(20, "Phone number is too long"),
+  message: z.string().max(1000, "Message must be less than 1000 characters").optional(),
+});
 
 interface ScheduleTourDialogProps {
   open: boolean;
@@ -50,12 +58,28 @@ const ScheduleTourDialog = ({
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
 
-    if (!date || !time || !name || !email || !phone) {
-      toast.error("Please fill in all required fields");
+    if (!date || !time) {
+      toast.error("Please select a date and time");
+      return;
+    }
+
+    const result = tourSchema.safeParse({ name, email, phone, message: message || undefined });
+    
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as string] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      toast.error("Please fix the form errors");
       return;
     }
 
@@ -73,6 +97,7 @@ const ScheduleTourDialog = ({
     setEmail("");
     setPhone("");
     setMessage("");
+    setErrors({});
     onOpenChange(false);
     setIsSubmitting(false);
   };
@@ -161,8 +186,10 @@ const ScheduleTourDialog = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="John Doe"
-              required
+              maxLength={100}
+              className={errors.name ? "border-destructive" : ""}
             />
+            {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
           </div>
 
           <div className="space-y-2">
@@ -172,8 +199,10 @@ const ScheduleTourDialog = ({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="john@example.com"
-              required
+              maxLength={255}
+              className={errors.email ? "border-destructive" : ""}
             />
+            {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
           </div>
 
           <div className="space-y-2">
@@ -183,8 +212,10 @@ const ScheduleTourDialog = ({
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="(123) 456-7890"
-              required
+              maxLength={20}
+              className={errors.phone ? "border-destructive" : ""}
             />
+            {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
           </div>
 
           <div className="space-y-2">
