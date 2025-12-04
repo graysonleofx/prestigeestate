@@ -31,7 +31,12 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <img src={logoIcon} alt="Prestige Estates" className="h-10 w-10 object-contain" />
+            <img 
+              src={logoIcon} 
+              alt="Prestige Estates" 
+              className="h-10 w-10 object-contain"
+              style={{ filter: 'sepia(1) saturate(3) hue-rotate(5deg) brightness(0.95)' }}
+            />
             <span className="text-2xl font-heading font-bold text-foreground">
               Prestige<span className="text-gold">Estates</span>
             </span>
