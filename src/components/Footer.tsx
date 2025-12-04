@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { MapPin, Phone, Mail, Instagram, Facebook, Twitter, Linkedin } from "lucide-react";
+import logoIcon from "@/assets/logo-icon.png";
 
 const Footer = () => {
   return (
@@ -8,7 +9,13 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Brand */}
           <div className="space-y-6">
-            <Link to="/" className="inline-block">
+            <Link to="/" className="inline-flex items-center gap-2">
+              <img 
+                src={logoIcon} 
+                alt="Prestige Estates" 
+                className="h-10 w-10 object-contain"
+                style={{ filter: 'sepia(1) saturate(3) hue-rotate(5deg) brightness(0.95)' }}
+              />
               <span className="text-2xl font-heading font-bold">
                 Prestige<span className="text-gold">Estates</span>
               </span>
