@@ -18,6 +18,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useProperty } from "@/hooks/useProperties";
 import ScheduleTourDialog from "@/components/ScheduleTourDialog";
+import SupportTicketForm from "@/components/SupportTicketForm";
 
 import property1 from "@/assets/property-1.jpg";
 import property2 from "@/assets/property-2.jpg";
@@ -287,6 +288,15 @@ const PropertyDetail = () => {
                         {defaultAgent.phone}
                       </Button>
                     </a>
+                    <SupportTicketForm
+                      propertyId={property.id}
+                      propertyTitle={property.title}
+                      triggerButton={
+                        <Button variant="secondary" size="lg" className="w-full">
+                          Ask a Question
+                        </Button>
+                      }
+                    />
                   </div>
 
                   <p className="text-sm text-muted-foreground text-center mt-4">
