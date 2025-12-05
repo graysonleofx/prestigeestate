@@ -34,7 +34,7 @@ const Navbar = () => {
           <Link to="/" className="flex items-center gap-2 text-center">
             <img src={logoIcon} alt="Prestige Estates" style={{
             filter: 'sepia(1) saturate(3) hue-rotate(5deg) brightness(0.95)'
-          }} className="h-15 w-15 object-contain" />
+          }} className="h-12 w-12 object-contain" />
             <span className="text-2xl font-heading font-bold text-foreground">
               Prestige<span className="text-gold">Estates</span>
             </span>
