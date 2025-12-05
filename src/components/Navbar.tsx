@@ -18,6 +18,9 @@ const navLinks = [{
 }, {
   href: "/contact",
   label: "Contact"
+}, {
+  href: "/support",
+  label: "Support"
 }];
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);

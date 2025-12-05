@@ -14,6 +14,8 @@ import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProperties from "./pages/admin/AdminProperties";
 import AdminPaymentMethods from "./pages/admin/AdminPaymentMethods";
+import AdminSupportTickets from "./pages/admin/AdminSupportTickets";
+import Support from "./pages/Support";
 import NotFound from "./pages/NotFound";
 import LiveChatWidget from "./components/LiveChatWidget";
 
@@ -32,11 +34,13 @@ const App = () => (
             <Route path="/property/:id" element={<PropertyDetail />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/support" element={<Support />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
               <Route path="properties" element={<AdminProperties />} />
               <Route path="payment-methods" element={<AdminPaymentMethods />} />
+              <Route path="support-tickets" element={<AdminSupportTickets />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
