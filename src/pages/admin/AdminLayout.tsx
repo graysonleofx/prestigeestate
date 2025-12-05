@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Home, Building, LogOut, Menu, X } from "lucide-react";
+import { Home, Building, LogOut, Menu, X, CreditCard } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +36,7 @@ const AdminLayout = () => {
   const navItems = [
     { href: "/admin", label: "Dashboard", icon: Home },
     { href: "/admin/properties", label: "Properties", icon: Building },
+    { href: "/admin/payment-methods", label: "Payment Methods", icon: CreditCard },
   ];
 
   return (

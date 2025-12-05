@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      payment_methods: {
+        Row: {
+          bank_account_last_four: string | null
+          bank_name: string | null
+          card_brand: string | null
+          card_holder_name: string | null
+          card_last_four: string | null
+          created_at: string
+          id: string
+          is_default: boolean | null
+          method_type: string
+          paypal_email: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bank_account_last_four?: string | null
+          bank_name?: string | null
+          card_brand?: string | null
+          card_holder_name?: string | null
+          card_last_four?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          method_type: string
+          paypal_email?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bank_account_last_four?: string | null
+          bank_name?: string | null
+          card_brand?: string | null
+          card_holder_name?: string | null
+          card_last_four?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          method_type?: string
+          paypal_email?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
