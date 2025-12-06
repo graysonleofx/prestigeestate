@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -28,9 +27,11 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Eye, Trash2, Search, Clock, CheckCircle, AlertCircle, MessageSquare } from "lucide-react";
+import TicketConversation from "@/components/TicketConversation";
 
 interface SupportTicket {
   id: string;
@@ -65,7 +66,6 @@ const AdminSupportTickets = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
-  const [adminNotes, setAdminNotes] = useState("");
   const [newStatus, setNewStatus] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -83,19 +83,59 @@ const AdminSupportTickets = () => {
     },
   });
 
+  const sendStatusNotification = async (ticket: SupportTicket, newStatus: string) => {
+    try {
+      let recipientEmail = ticket.guest_email;
+      let recipientName = ticket.guest_name || "Customer";
+
+      if (ticket.user_id) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("email, full_name")
+          .eq("id", ticket.user_id)
+          .single();
+
+        if (profile) {
+          recipientEmail = profile.email;
+          recipientName = profile.full_name || "Customer";
+        }
+      }
+
+      if (recipientEmail) {
+        await supabase.functions.invoke("send-ticket-notification", {
+          body: {
+            type: "ticket_updated",
+            ticketId: ticket.id,
+            recipientEmail,
+            recipientName,
+            ticketSubject: ticket.subject,
+            updatedFields: ["Status changed to " + newStatus],
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Error sending notification:", error);
+    }
+  };
+
   const updateMutation = useMutation({
-    mutationFn: async ({ id, status, admin_notes }: { id: string; status: string; admin_notes: string }) => {
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { error } = await supabase
         .from("support_tickets")
-        .update({ status, admin_notes })
+        .update({ status })
         .eq("id", id);
 
       if (error) throw error;
+      return { id, status };
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ["admin-support-tickets"] });
-      toast({ title: "Success", description: "Ticket updated successfully." });
-      setSelectedTicket(null);
+      toast({ title: "Success", description: "Ticket status updated." });
+      
+      // Send notification
+      if (selectedTicket) {
+        await sendStatusNotification(selectedTicket, data.status);
+      }
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to update ticket.", variant: "destructive" });
@@ -137,16 +177,14 @@ const AdminSupportTickets = () => {
 
   const openTicketDialog = (ticket: SupportTicket) => {
     setSelectedTicket(ticket);
-    setAdminNotes(ticket.admin_notes || "");
     setNewStatus(ticket.status);
   };
 
-  const handleUpdateTicket = () => {
-    if (!selectedTicket) return;
+  const handleUpdateStatus = () => {
+    if (!selectedTicket || newStatus === selectedTicket.status) return;
     updateMutation.mutate({
       id: selectedTicket.id,
       status: newStatus,
-      admin_notes: adminNotes,
     });
   };
 
@@ -304,46 +342,60 @@ const AdminSupportTickets = () => {
         </Table>
       </div>
 
-      {/* Ticket Detail Dialog */}
+      {/* Ticket Detail Dialog with Conversation */}
       <Dialog open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="font-heading flex items-center gap-2">
               <MessageSquare className="h-5 w-5" />
-              Ticket Details
+              {selectedTicket?.subject}
             </DialogTitle>
             <DialogDescription>
-              View and respond to this support ticket
+              View ticket details and respond to the customer
             </DialogDescription>
           </DialogHeader>
 
           {selectedTicket && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Contact</p>
-                  <p className="font-medium">{selectedTicket.guest_name || "Registered User"}</p>
-                  <p className="text-sm">{selectedTicket.guest_email || "-"}</p>
+            <Tabs defaultValue="conversation" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="conversation">Conversation</TabsTrigger>
+                <TabsTrigger value="details">Details & Status</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="conversation" className="h-[500px]">
+                <TicketConversation
+                  ticketId={selectedTicket.id}
+                  ticketSubject={selectedTicket.subject}
+                  ticketStatus={selectedTicket.status}
+                  initialMessage={selectedTicket.message}
+                  createdAt={selectedTicket.created_at}
+                  guestName={selectedTicket.guest_name}
+                  guestEmail={selectedTicket.guest_email}
+                  isAdmin={true}
+                  onReplyAdded={() => queryClient.invalidateQueries({ queryKey: ["admin-support-tickets"] })}
+                />
+              </TabsContent>
+
+              <TabsContent value="details" className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Contact</p>
+                    <p className="font-medium">{selectedTicket.guest_name || "Registered User"}</p>
+                    <p className="text-sm">{selectedTicket.guest_email || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Submitted</p>
+                    <p>{format(new Date(selectedTicket.created_at), "PPpp")}</p>
+                  </div>
                 </div>
+
                 <div>
-                  <p className="text-sm text-muted-foreground">Submitted</p>
-                  <p>{format(new Date(selectedTicket.created_at), "PPpp")}</p>
+                  <p className="text-sm text-muted-foreground">Priority</p>
+                  <Badge variant="outline" className={`mt-1 ${priorityConfig[selectedTicket.priority]?.color}`}>
+                    {selectedTicket.priority}
+                  </Badge>
                 </div>
-              </div>
 
-              <div>
-                <p className="text-sm text-muted-foreground">Subject</p>
-                <p className="font-medium">{selectedTicket.subject}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-muted-foreground">Message</p>
-                <p className="whitespace-pre-wrap bg-secondary/50 p-3 rounded-lg">
-                  {selectedTicket.message}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm text-muted-foreground">Status</label>
                   <Select value={newStatus} onValueChange={setNewStatus}>
@@ -358,33 +410,21 @@ const AdminSupportTickets = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Priority</p>
-                  <Badge variant="outline" className={`mt-2 ${priorityConfig[selectedTicket.priority]?.color}`}>
-                    {selectedTicket.priority}
-                  </Badge>
+
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button variant="outline" onClick={() => setSelectedTicket(null)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    variant="gold" 
+                    onClick={handleUpdateStatus} 
+                    disabled={updateMutation.isPending || newStatus === selectedTicket.status}
+                  >
+                    {updateMutation.isPending ? "Saving..." : "Update Status"}
+                  </Button>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Admin Notes / Response</label>
-                <Textarea
-                  value={adminNotes}
-                  onChange={(e) => setAdminNotes(e.target.value)}
-                  placeholder="Add notes or a response..."
-                  rows={4}
-                />
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setSelectedTicket(null)}>
-                  Cancel
-                </Button>
-                <Button variant="gold" onClick={handleUpdateTicket} disabled={updateMutation.isPending}>
-                  {updateMutation.isPending ? "Saving..." : "Save Changes"}
-                </Button>
-              </div>
-            </div>
+              </TabsContent>
+            </Tabs>
           )}
         </DialogContent>
       </Dialog>

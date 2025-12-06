@@ -14,12 +14,19 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { z } from "zod";
-import { Send, Ticket, Clock, CheckCircle, AlertCircle, HelpCircle } from "lucide-react";
+import { Send, Ticket, Clock, CheckCircle, AlertCircle, HelpCircle, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
+import TicketConversation from "@/components/TicketConversation";
 
 const ticketSchema = z.object({
   guest_name: z.string().max(100, "Name must be less than 100 characters").optional(),
@@ -37,6 +44,8 @@ interface SupportTicket {
   priority: string;
   created_at: string;
   admin_notes: string | null;
+  guest_name: string | null;
+  guest_email: string | null;
 }
 
 const statusConfig: Record<string, { icon: typeof Clock; color: string; label: string }> = {
@@ -51,6 +60,7 @@ const Support = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [userTickets, setUserTickets] = useState<SupportTicket[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -90,6 +100,23 @@ const Support = () => {
       console.error("Error fetching tickets:", error);
     } finally {
       setLoadingTickets(false);
+    }
+  };
+
+  const sendNotification = async (ticketSubject: string, message: string, email: string, name: string) => {
+    try {
+      await supabase.functions.invoke("send-ticket-notification", {
+        body: {
+          type: "ticket_created",
+          ticketId: "",
+          recipientEmail: email,
+          recipientName: name,
+          ticketSubject,
+          message,
+        },
+      });
+    } catch (error) {
+      console.error("Error sending notification:", error);
     }
   };
 
@@ -139,6 +166,13 @@ const Support = () => {
         .insert(ticketData);
 
       if (error) throw error;
+
+      // Send email notification
+      const recipientEmail = user?.email || formData.guest_email;
+      const recipientName = formData.guest_name || "Customer";
+      if (recipientEmail) {
+        await sendNotification(formData.subject, formData.message, recipientEmail, recipientName);
+      }
 
       toast({
         title: "Ticket Submitted",
@@ -335,7 +369,8 @@ const Support = () => {
                         return (
                           <div
                             key={ticket.id}
-                            className="border border-border rounded-lg p-4 space-y-2"
+                            className="border border-border rounded-lg p-4 space-y-2 cursor-pointer hover:bg-secondary/30 transition-colors"
+                            onClick={() => setSelectedTicket(ticket)}
                           >
                             <div className="flex items-start justify-between gap-2">
                               <h4 className="font-medium text-foreground line-clamp-1">
@@ -351,16 +386,16 @@ const Support = () => {
                             </p>
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
                               <span>{format(new Date(ticket.created_at), "MMM d, yyyy")}</span>
-                              <Badge variant="outline" className="text-xs">
-                                {ticket.priority}
-                              </Badge>
-                            </div>
-                            {ticket.admin_notes && (
-                              <div className="mt-2 p-2 bg-secondary/50 rounded text-sm">
-                                <span className="font-medium">Response: </span>
-                                {ticket.admin_notes}
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs">
+                                  {ticket.priority}
+                                </Badge>
+                                <Button variant="ghost" size="sm" className="h-6 px-2">
+                                  <MessageSquare className="h-3 w-3 mr-1" />
+                                  View
+                                </Button>
                               </div>
-                            )}
+                            </div>
                           </div>
                         );
                       })}
@@ -372,6 +407,33 @@ const Support = () => {
           </div>
         </div>
       </div>
+
+      {/* Ticket Conversation Dialog */}
+      <Dialog open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="font-heading flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-gold" />
+              {selectedTicket?.subject}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedTicket && (
+            <div className="h-[500px]">
+              <TicketConversation
+                ticketId={selectedTicket.id}
+                ticketSubject={selectedTicket.subject}
+                ticketStatus={selectedTicket.status}
+                initialMessage={selectedTicket.message}
+                createdAt={selectedTicket.created_at}
+                guestName={selectedTicket.guest_name}
+                guestEmail={selectedTicket.guest_email}
+                isAdmin={false}
+                onReplyAdded={fetchUserTickets}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </main>

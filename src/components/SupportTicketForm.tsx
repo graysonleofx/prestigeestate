@@ -106,6 +106,26 @@ const SupportTicketForm = ({ propertyId, propertyTitle, triggerButton }: Support
 
       if (error) throw error;
 
+      // Send email notification
+      const recipientEmail = user?.email || formData.guest_email;
+      const recipientName = formData.guest_name || "Customer";
+      if (recipientEmail) {
+        try {
+          await supabase.functions.invoke("send-ticket-notification", {
+            body: {
+              type: "ticket_created",
+              ticketId: "",
+              recipientEmail,
+              recipientName,
+              ticketSubject: formData.subject,
+              message: formData.message,
+            },
+          });
+        } catch (e) {
+          console.error("Error sending notification:", e);
+        }
+      }
+
       toast({
         title: "Ticket Submitted",
         description: "We'll get back to you as soon as possible.",
